@@ -1,8 +1,9 @@
-from telebot import TeleBot
-import sqlalchemy as sa
-from init_db import broni
 import time
-from messages_and_sticers import eror_message
+from random import choice
+import sqlalchemy as sa
+from telebot import TeleBot
+from init_db import broni
+from messages_and_stickers import eror_message, displayed_message, stickers_happy, stickers_angry
 
 
 engine = sa.create_engine('sqlite:///broni.db')
@@ -13,8 +14,8 @@ bot = TeleBot("5881448051:AAGnJFe2NRnfochJ91PRw6NW73Fu4ufbXrk")
 def start(message):
     msg = ''
     with open("hello_message.txt", "rt") as f:
-        for x in f:
-            msg += x
+        for row in f:
+            msg += row
     bot.send_message(message.chat.id, msg)
 
 
@@ -22,8 +23,8 @@ def start(message):
 def start(message):
     msg = ''
     with open("hello_message.txt", "rt") as f:
-        for x in f:
-            msg += x
+        for row in f:
+            msg += row
     bot.send_message(message.chat.id, msg)
 
 
@@ -35,12 +36,13 @@ def get_information_from_bd(message):
         result = conn.execute(select_reqst)
         rows = result.fetchall()
         for row in rows:
-            msg += f'{row[0]} - {row[1]} ___ {row[2]}\n'
+            msg += displayed_message.format(row[0], row[1], row[2])
 
         try:
             bot.send_message(message.chat.id, msg)
         except:
             bot.send_message(message.chat.id, "Броней больше нет")
+            bot.send_sticker(message.chat.id, choice(stickers_happy))
 
 
 @bot.message_handler(commands=["del"])
@@ -57,6 +59,7 @@ def return_to_default_value(message):
                 broni.c.id == el).values(value="N/A")
             conn.execute(update_reqst)
             conn.commit()
+    bot.send_sticker(message.chat.id, choice(stickers_happy))
 
 
 @bot.message_handler(commands=["write"])
@@ -67,9 +70,10 @@ def write_to_file(message):
         result = conn.execute(select_reqst)
         rows = result.fetchall()
         for row in rows:
-            msg += f'{row[0]} - {row[1]} ___ {row[2]}\n'
+            msg += displayed_message.format(row[0], row[1], row[2])
 
         f.write(msg)
+    bot.send_message(message.chat.id, "Брони успешно записанны, мастер!")
 
 
 @bot.message_handler(content_types=["text"])
@@ -84,8 +88,7 @@ def send_information_to_bd(message):
                 broni.c.id == msg[0]).values(value=msg[1], actual_time=actual_time)
             conn.execute(update_reqst)
             conn.commit()
-            bot.send_message(message.chat.id, "Все прошло успешно")
-            # bot.send_stickers()
+        bot.send_sticker(message.chat.id, choice(stickers_angry))
 
 
 if __name__ == "__main__":
