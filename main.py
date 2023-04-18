@@ -2,7 +2,8 @@ from telebot import TeleBot
 import sqlalchemy as sa
 from init_db import broni
 import time
-from test import hello_string
+from messages_and_sticers import eror_message
+
 
 engine = sa.create_engine('sqlite:///broni.db')
 bot = TeleBot("5881448051:AAGnJFe2NRnfochJ91PRw6NW73Fu4ufbXrk")
@@ -10,58 +11,81 @@ bot = TeleBot("5881448051:AAGnJFe2NRnfochJ91PRw6NW73Fu4ufbXrk")
 
 @bot.message_handler(commands=["start"])
 def start(message):
-    bot.send_message(message.chat.id, hello_string)
+    msg = ''
+    with open("hello_message.txt", "rt") as f:
+        for x in f:
+            msg += x
+    bot.send_message(message.chat.id, msg)
+
+
+@bot.message_handler(commands=["guide"])
+def start(message):
+    msg = ''
+    with open("hello_message.txt", "rt") as f:
+        for x in f:
+            msg += x
+    bot.send_message(message.chat.id, msg)
 
 
 @bot.message_handler(commands=["get"])
-def get(message):
+def get_information_from_bd(message):
     with engine.connect() as conn:
         msg = ''
-        result = conn.execute(sa.select(broni).where(broni.c.value != "N/A"))
-        for x in result.fetchall():
-            msg += f'{x[0]} - {x[1]} ___ {x[2]}\n'
-        bot.send_message(message.chat.id, msg)
+        select_reqst = sa.select(broni).where(broni.c.value != "N/A")
+        result = conn.execute(select_reqst)
+        rows = result.fetchall()
+        for row in rows:
+            msg += f'{row[0]} - {row[1]} ___ {row[2]}\n'
+
+        try:
+            bot.send_message(message.chat.id, msg)
+        except:
+            bot.send_message(message.chat.id, "Броней больше нет")
 
 
 @bot.message_handler(commands=["del"])
-def delete_record(message):
+def initiate_return_to_default_value(message):
     msg = bot.send_message(message.chat.id, "Введи номер компьютера")
-    bot.register_next_step_handler(msg, next_step_del)
+    bot.register_next_step_handler(msg, return_to_default_value)
 
 
-def next_step_del(message):
+def return_to_default_value(message):
+    msg = message.text.split()
     with engine.connect() as conn:
-        msg = message.text.split()
-        for x in msg:
-            conn.execute(sa.update(broni).where(
-                broni.c.id == x).values(value="N/A"))
+        for el in msg:
+            update_reqst = sa.update(broni).where(
+                broni.c.id == el).values(value="N/A")
+            conn.execute(update_reqst)
             conn.commit()
 
 
-@bot.message_handler(commands=["write_to_file"])
+@bot.message_handler(commands=["write"])
 def write_to_file(message):
     msg = ''
     with (engine.connect() as conn, open("broni.txt", "wt") as f):
-        result = conn.execute(sa.select(broni).where(broni.c.value != "N/A"))
-        for x in result.fetchall():
-            msg += f'{x[0]} - {x[1]} ___ {x[2]}\n'
+        select_reqst = sa.select(broni).where(broni.c.value != "N/A")
+        result = conn.execute(select_reqst)
+        rows = result.fetchall()
+        for row in rows:
+            msg += f'{row[0]} - {row[1]} ___ {row[2]}\n'
+
         f.write(msg)
 
 
 @bot.message_handler(content_types=["text"])
-def create_bron(message):
+def send_information_to_bd(message):
     msg = message.text.split()
     if len(msg) > 2:
-        bot.send_message(message.chat.id, "you are idiot")
-    elif int(msg[0]) < 0 or int(msg[0]) > 28:
-        bot.send_message(message.chat.id, "you are idiot 29")
+        bot.send_message(message.chat.id, eror_message.format(message.text))
     else:
-        now_time = time.strftime("%H:%M", time.localtime())
+        actual_time = time.strftime("%H:%M", time.localtime())
         with engine.connect() as conn:
-            conn.execute(sa.update(broni).where(
-                broni.c.id == msg[0]).values(value=msg[1], actual_time=now_time))
+            update_reqst = sa.update(broni).where(
+                broni.c.id == msg[0]).values(value=msg[1], actual_time=actual_time)
+            conn.execute(update_reqst)
             conn.commit()
             bot.send_message(message.chat.id, "Все прошло успешно")
+            # bot.send_stickers()
 
 
 if __name__ == "__main__":
