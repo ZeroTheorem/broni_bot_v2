@@ -89,4 +89,4 @@ def send_information_to_bd(message):
 
 
 if __name__ == "__main__":
-    bot.polling()
+    bot.polling(non_stop=True)
