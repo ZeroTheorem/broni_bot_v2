@@ -3,7 +3,7 @@ from random import choice
 import sqlalchemy as sa
 from telebot import TeleBot
 from init_db import broni
-from messages_and_stickers import eror_message, displayed_message, stickers_happy, stickers_angry
+from messages_and_stickers import eror_message, displayed_message, hello_message, stickers_happy, stickers_angry
 
 
 engine = sa.create_engine('sqlite:///broni.db')
@@ -12,17 +12,14 @@ bot = TeleBot("5881448051:AAGnJFe2NRnfochJ91PRw6NW73Fu4ufbXrk")
 
 @bot.message_handler(commands=["start"])
 def start(message):
-    msg = ''
-    with open("hello_message.txt", "rt") as f:
-        for row in f:
-            msg += row
-    bot.send_message(message.chat.id, msg)
+    bot.send_message(
+        message.chat.id, hello_message)
 
 
 @bot.message_handler(commands=["guide"])
-def start(message):
+def get_guide(message):
     msg = ''
-    with open("hello_message.txt", "rt") as f:
+    with open("guide.txt", "rt") as f:
         for row in f:
             msg += row
     bot.send_message(message.chat.id, msg)
