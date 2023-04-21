@@ -75,17 +75,20 @@ def write_to_file(message):
 
 @bot.message_handler(content_types=["text"])
 def send_information_to_bd(message):
-    msg = message.text.split()
-    if len(msg) > 2:
-        bot.send_message(message.chat.id, eror_message.format(message.text))
+    msg = message.text
+    actual_time = time.strftime("%H:%M", time.localtime())
+    if "/" in msg:
+        msg = msg.split(" / ")
+        msg = (el.split() for el in msg)
     else:
-        actual_time = time.strftime("%H:%M", time.localtime())
-        with engine.connect() as conn:
+        msg = (msg.split(), )
+    with engine.connect() as conn:
+        for el in msg:
             update_reqst = sa.update(broni).where(
-                broni.c.id == msg[0]).values(value=msg[1], actual_time=actual_time)
+                broni.c.id == el[0]).values(value=el[1], actual_time=actual_time)
             conn.execute(update_reqst)
             conn.commit()
-        bot.send_sticker(message.chat.id, choice(stickers_angry))
+    bot.send_sticker(message.chat.id, choice(stickers_angry))
 
 
 if __name__ == "__main__":
